@@ -1,0 +1,7 @@
+{"mode": "offline fixture", "question": "Which campaigns spent money but recorded no conversions?"}
+{"attempt": 1}
+{"plan": {"intent": "analytics", "reports": [{"group": "campaign", "fields": ["spend", "conversions"], "zero_conversions_with_spend": true}]}}
+{"sql": "SELECT r.name, r.spend, r.conversions FROM (WITH totals AS (\nSELECT c.id, c.name, c.channel, c.objective, c.status, c.daily_budget,\n       SUM(m.impressions) AS impressions, SUM(m.clicks) AS clicks,\n       SUM(m.spend) AS spend, SUM(m.conversions) AS conversions, SUM(m.revenue) AS revenue\nFROM campaigns AS c LEFT JOIN daily_metrics AS m\n  ON c.id=m.campaign_id AND m.date BETWEEN ? AND ?\nGROUP BY c.id\n), scoped AS (SELECT * FROM totals) SELECT *,\n1.0*revenue/NULLIF(spend,0) AS roas,\n100.0*clicks/NULLIF(impressions,0) AS ctr,\n100.0*conversions/NULLIF(clicks,0) AS conversion_rate\n FROM scoped) AS r WHERE r.conversions=0 AND r.spend>0 ORDER BY r.name LIMIT ?", "parameters": ["2026-10-28", "2026-11-26", 200]}
+{"row_count": 2, "sample": [{"name": "Brand_Reach", "spend": 480.0, "conversions": 0}, {"name": "Brand_Recall", "spend": 344.0, "conversions": 0}]}
+{"answer": "2026-10-28 through 2026-11-26\nname: Brand_Reach | spend: 480.00 | conversions: 0\nname: Brand_Recall | spend: 344.00 | conversions: 0"}
+{"expected": "Brand_Recall", "result": "PASS"}

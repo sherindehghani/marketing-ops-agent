@@ -1,0 +1,11 @@
+{"mode": "offline fixture", "question": "Should we increase the budget for Summer_Sale?"}
+{"attempt": 1}
+{"plan": {"intent": "policy", "name": "Summer_Sale"}}
+{"sql": "SELECT id,name FROM campaigns WHERE instr(lower(name),lower(?))>0 ORDER BY name", "parameters": ["Summer_Sale"]}
+{"row_count": 1, "sample": [{"id": 1, "name": "Summer_Sale"}]}
+{"resolved": {"id": 1, "name": "Summer_Sale"}}
+{"sql": "WITH totals AS (\nSELECT c.id, c.name, c.channel, c.objective, c.status, c.daily_budget,\n       SUM(m.impressions) AS impressions, SUM(m.clicks) AS clicks,\n       SUM(m.spend) AS spend, SUM(m.conversions) AS conversions, SUM(m.revenue) AS revenue\nFROM campaigns AS c LEFT JOIN daily_metrics AS m\n  ON c.id=m.campaign_id AND m.date BETWEEN ? AND ?\nGROUP BY c.id\n), scoped AS (SELECT * FROM totals WHERE id=?) SELECT *,\n1.0*revenue/NULLIF(spend,0) AS roas,\n100.0*clicks/NULLIF(impressions,0) AS ctr,\n100.0*conversions/NULLIF(clicks,0) AS conversion_rate\n FROM scoped ORDER BY name", "parameters": ["2026-10-28", "2026-11-26", 1]}
+{"row_count": 1, "sample": [{"id": 1, "name": "Summer_Sale", "channel": "google_ads", "objective": "conversion", "status": "active", "daily_budget": 100.0, "impressions": 44000, "clicks": 3520, "spend": 1320.0, "conversions": 352, "revenue": 6336.0, "roas": 4.8, "ctr": 8.0, "conversion_rate": 10.0}]}
+{"decision": "Summer_Sale | R2 | Scale daily budget from $100.00 to $120.00. Spend $1320.00, ROAS 4.80, conversion rate 10.00%."}
+{"answer": "2026-10-28 through 2026-11-26\nSummer_Sale | R2 | Scale daily budget from $100.00 to $120.00. Spend $1320.00, ROAS 4.80, conversion rate 10.00%."}
+{"expected": "R2 | Scale", "result": "PASS"}

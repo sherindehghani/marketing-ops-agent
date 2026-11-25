@@ -1,0 +1,8 @@
+{"mode": "offline fixture", "question": "Is our LinkedIn brand awareness campaign healthy?"}
+{"attempt": 1}
+{"plan": {"intent": "policy", "channel": "linkedin", "objective": "brand_awareness"}}
+{"sql": "WITH totals AS (\nSELECT c.id, c.name, c.channel, c.objective, c.status, c.daily_budget,\n       SUM(m.impressions) AS impressions, SUM(m.clicks) AS clicks,\n       SUM(m.spend) AS spend, SUM(m.conversions) AS conversions, SUM(m.revenue) AS revenue\nFROM campaigns AS c LEFT JOIN daily_metrics AS m\n  ON c.id=m.campaign_id AND m.date BETWEEN ? AND ?\nGROUP BY c.id\n), scoped AS (SELECT * FROM totals WHERE channel=? AND objective=?) SELECT *,\n1.0*revenue/NULLIF(spend,0) AS roas,\n100.0*clicks/NULLIF(impressions,0) AS ctr,\n100.0*conversions/NULLIF(clicks,0) AS conversion_rate\n FROM scoped ORDER BY name", "parameters": ["2026-10-28", "2026-11-26", "linkedin", "brand_awareness"]}
+{"row_count": 1, "sample": [{"id": 3, "name": "Brand_Reach", "channel": "linkedin", "objective": "brand_awareness", "status": "active", "daily_budget": 70.0, "impressions": 40000, "clicks": 880, "spend": 480.0, "conversions": 0, "revenue": 0.0, "roas": 0.0, "ctr": 2.2, "conversion_rate": 0.0}]}
+{"decision": "Brand_Reach | R3 | Healthy. CTR 2.20%."}
+{"answer": "2026-10-28 through 2026-11-26\nBrand_Reach | R3 | Healthy. CTR 2.20%."}
+{"expected": "Brand_Reach | R3 | Healthy", "result": "PASS"}

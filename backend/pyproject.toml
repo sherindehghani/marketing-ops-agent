@@ -1,0 +1,12 @@
+[tool.poetry]
+name = "marketing-ops-backend"
+version = "0.1.0"
+description = "Marketing operations backend"
+authors = ["Marketing Ops Team"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+langgraph = "1.2.24"
+fastapi = "0.165.0"
+uvicorn = "0.54.0"

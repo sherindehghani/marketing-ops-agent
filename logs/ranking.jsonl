@@ -1,7 +1,0 @@
-{"mode": "offline fixture", "question": "Which channel had the highest ROAS over the last 30 days?"}
-{"attempt": 1}
-{"plan": {"intent": "analytics", "reports": [{"group": "channel", "fields": ["roas"], "order": [["roas", "desc"]], "limit": 1}], "name": ""}}
-{"sql": "SELECT r.channel, r.roas FROM (WITH totals AS (\nSELECT c.id, c.name, c.channel, c.objective, c.status, c.daily_budget,\n       SUM(m.impressions) AS impressions, SUM(m.clicks) AS clicks,\n       SUM(m.spend) AS spend, SUM(m.conversions) AS conversions, SUM(m.revenue) AS revenue\nFROM campaigns AS c LEFT JOIN daily_metrics AS m\n  ON c.id=m.campaign_id AND m.date BETWEEN ? AND ?\nGROUP BY c.id\n), scoped AS (SELECT * FROM totals), grouped AS (SELECT channel,SUM(impressions) AS impressions,SUM(clicks) AS clicks,SUM(spend) AS spend,SUM(conversions) AS conversions,SUM(revenue) AS revenue FROM scoped GROUP BY channel) SELECT *,\n1.0*revenue/NULLIF(spend,0) AS roas,\n100.0*clicks/NULLIF(impressions,0) AS ctr,\n100.0*conversions/NULLIF(clicks,0) AS conversion_rate\n FROM grouped) AS r ORDER BY r.roas desc NULLS LAST, r.channel LIMIT ?", "parameters": ["2026-10-27", "2026-11-25", 1]}
-{"row_count": 1, "sample": [{"channel": "email", "roas": 4.5}]}
-{"answer": "2026-10-27 through 2026-11-25\nchannel: email | roas: 4.50"}
-{"expected": "email", "result": "PASS"}

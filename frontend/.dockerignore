@@ -1,0 +1,7 @@
+*
+!Dockerfile
+!app.py
+!pyproject.toml
+!poetry.lock
+!.streamlit/
+!.streamlit/config.toml
