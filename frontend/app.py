@@ -21,14 +21,11 @@ EXAMPLES = {
 def label(english, persian):
     if language == "فارسی":
         return f"\u2067{persian}\u2069"
-    if language == "English":
-        return english
-    # Isolate the Persian run so punctuation stays with its own language.
-    return f"{english}  ·  \u2067{persian}\u2069"
+    return english
 
 
 st.set_page_config(page_title="Campaign analysis | تحلیل کمپین", page_icon="📊")
-language = st.selectbox("زبان / Language", ["فارسی + English", "فارسی", "English"])
+language = st.selectbox("زبان / Language", ["فارسی", "English"])
 st.html("""
 <style>
 .stMainBlockContainer { max-width: 59rem; }
@@ -92,10 +89,10 @@ if submitted:
 if "result" in st.session_state:
     st.subheader(label("Analysis result", "نتیجهٔ تحلیل"))
     result = st.session_state.result
-    if language != "English":
+    if language == "فارسی":
         with st.container(border=True):
             st.html('<div dir="rtl" lang="fa" style="white-space:pre-wrap">' +
                     escape(result["answer_fa"]) + '</div>')
-    if language != "فارسی":
+    else:
         with st.container(border=True):
             st.text(result["answer"])
