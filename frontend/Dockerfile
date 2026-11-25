@@ -12,5 +12,6 @@ ENV PATH="/app/.venv/bin:$PATH" \
     STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 RUN useradd --create-home --uid 10001 dashboard
 COPY app.py .
+COPY .streamlit/config.toml .streamlit/config.toml
 USER dashboard
 CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]

@@ -7,6 +7,8 @@ Ask a question in English or Persian about campaign performance or budget policy
 Run `docker compose up -d --build` from the repository root and open
 [Campaign analysis](http://localhost:8501). Choose a sample question for an offline
 analysis, or switch to **Live analysis** to use the configured model.
+The dashboard displays English and Persian together. For live analysis, copy
+`sample.env` to `.env` and fill in the provider credentials.
 Set `FRONTEND_PORT` to change the published dashboard port.
 
 The Streamlit client and its Poetry project live in `frontend/`. The API, agent,
