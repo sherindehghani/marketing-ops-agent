@@ -1,8 +1,22 @@
 x-agent-image: &agent-image
   image: marketing-ops-agent:local
-  build: .
+  build: ./backend
 
 services:
+  frontend:
+    build: ./frontend
+    depends_on:
+      - gateway
+    environment:
+      MARKETING_API_URL: http://gateway:8080
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8501}:8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   seed:
     <<: *agent-image
     entrypoint: ["python", "seed_db.py"]
@@ -41,7 +55,7 @@ services:
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./backend/nginx.conf:/etc/nginx/nginx.conf:ro
 
   agent:
     <<: *agent-image
