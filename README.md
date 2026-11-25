@@ -4,7 +4,7 @@ Ask a question in English or Persian about campaign performance or budget policy
 
 ## Run with Docker Compose
 
-With Docker Engine and Docker Compose running, execute these commands from this directory.
+The build pulls its Python base image from the [ArvanCloud Docker mirror](https://www.arvancloud.ir/fa/dev/docker). With Docker Engine and Docker Compose running, execute these commands from this directory.
 
 ~~~sh
 docker compose build agent
