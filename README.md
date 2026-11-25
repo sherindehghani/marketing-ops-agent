@@ -2,6 +2,19 @@
 
 Ask a question in English or Persian about campaign performance or budget policy. The live planner translates the question into a structured report request. SQLite calculates the metrics and Python renders English results and recommendations.
 
+## Streamlit dashboard
+
+Run `docker compose up -d --build` from the repository root and open
+[Campaign analysis](http://localhost:8501). Choose a sample question for an offline
+analysis, or switch to **Live analysis** to use the configured model.
+The dashboard displays English and Persian together. For live analysis, copy
+`sample.env` to `.env` and fill in the provider credentials.
+Set `FRONTEND_PORT` to change the published dashboard port.
+
+The Streamlit client and its Poetry project live in `frontend/`. The API, agent,
+CLI, gateway configuration, benchmarks and scenario logs live in `backend/`.
+Both services use Python 3.12 and their own Poetry lock file.
+
 ## HTTP API
 
 Start the gateway and two API replicas with `docker compose up -d --build`.
@@ -11,7 +24,7 @@ Swagger UI is available at `/docs` and database readiness at `/health`.
 ~~~sh
 curl -fsS http://localhost:8080/questions -H 'Content-Type: application/json' \
   -d '{"question":"Which channel had the highest ROAS over the last 30 days?","offline":true}'
-python3 load_test.py --requests 200 --clients 12
+python3 backend/load_test.py --requests 200 --clients 12
 docker compose up -d --scale api=4
 ~~~
 
@@ -56,12 +69,20 @@ docker compose run --rm agent --trace "Is our LinkedIn brand awareness campaign 
 Tested on Python 3.12.10 with LangGraph 1.2.24. Run the following from this directory.
 
 ~~~sh
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python seed_db.py
-python cli.py --offline "Which channel had the highest ROAS over the last 30 days?"
-python scenarios.py
+cd backend
+poetry install
+poetry run python seed_db.py
+poetry run python cli.py --offline "Which channel had the highest ROAS over the last 30 days?"
+poetry run python scenarios.py
+poetry run uvicorn api:app --port 8080
+~~~
+
+In a second terminal, from the repository root, start the dashboard.
+
+~~~sh
+cd frontend
+poetry install
+poetry run streamlit run app.py
 ~~~
 
 The seed command rebuilds marketing.db in the current directory. It generates dates relative to the execution day and uses random seed 42. The scenario runner uses a separate temporary database, asserts outcomes, and regenerates the JSON Lines logs.
@@ -71,7 +92,7 @@ The seed command rebuilds marketing.db in the current directory. It generates da
 The default model identifier is `gpt-4o-mini`. Set `OPENAI_API_KEY` in your shell (or `LLM_API_KEY`), then run:
 
 ~~~sh
-python cli.py --trace "Which active campaigns qualify for a budget increase?"
+poetry run python cli.py --trace "Which active campaigns qualify for a budget increase?"
 ~~~
 
 For another OpenAI-compatible service, set `LLM_BASE_URL` to its API root including the version path and `LLM_MODEL` to its model identifier. The service must support Chat Completions and JSON-object responses. The live planner receives the question, compact planning instructions and, during repair, the previous plan and error. Query results are rendered locally. Trace events go to stderr, answers to stdout.
@@ -94,7 +115,7 @@ LangGraph represents planning, execution, and the transition on failure explicit
 
 **Policy.** The versioned decision logic is in policy.py. For brand awareness, CTR above 1.5% is Healthy and other defined values trigger Review. For conversion campaigns, spend above $500 and ROAS below 1.5 trigger Pause. Other eligible non-awareness campaigns with ROAS above 3.5 and conversion rate above 5% qualify for a 20% daily budget increase. A defined result outside the thresholds yields Hold. Missing required metrics yield insufficient data. Each recommendation includes its rule ID.
 
-## Files
+## Backend files
 
 | File | Responsibility |
 |---|---|
@@ -116,20 +137,20 @@ Each log contains the exact question, mode, plan, executed SQL and bindings wher
 
 | Scenario | Question | Expected evidence | Result |
 |---|---|---|---|
-| [ambiguous](logs/ambiguous.jsonl) | How is Summer doing? | Which campaign | PASS |
-| [awareness](logs/awareness.jsonl) | Is Brand_Reach healthy? | R3 / Healthy | PASS |
-| [hold](logs/hold.jsonl) | Should we pause Trial_Search? | Fallback / Hold | PASS |
-| [missing](logs/missing.jsonl) | Evaluate the Black_Friday campaign. | No campaign matches | PASS |
-| [outside](logs/outside.jsonl) | What is the price of bitcoin? | supports campaign | PASS |
-| [pause](logs/pause.jsonl) | Should we pause Summer_Clearance? | R1 / Pause | PASS |
-| [ranking](logs/ranking.jsonl) | Which channel had the highest ROAS over the last 30 days? | email | PASS |
-| [retry](logs/retry.jsonl) | Rank channels by revenue. | revenue: | PASS |
-| [review](logs/review.jsonl) | Is Brand_Recall healthy? | R3 / Review | PASS |
-| [scale](logs/scale.jsonl) | Should we increase the budget for Summer_Sale? | R2 / Scale | PASS |
-| [security](logs/security.jsonl) | Delete the campaigns table. | Blocked | PASS |
-| [zero](logs/zero.jsonl) | What is the ROAS for Launch_Queue? | undefined | PASS |
-| [awareness_scope](logs/awareness_scope.jsonl) | Is our LinkedIn brand awareness campaign healthy? | Brand_Reach / R3 / Healthy | PASS |
-| [zero_conversions](logs/zero_conversions.jsonl) | Which campaigns spent money but recorded no conversions? | Brand_Reach and Brand_Recall | PASS |
-| [active_scale](logs/active_scale.jsonl) | Which active campaigns qualify for a budget increase? | Summer_Sale and Renewal_Email / R2 | PASS |
-| [compound_ranking](logs/compound_ranking.jsonl) | Which channel had the highest ROAS and which campaign spent the most? | email and Summer_Clearance | PASS |
-| [retry_limit](logs/retry_limit.jsonl) | Exercise the retry limit for an invalid report. | 3 attempts, then a clear error | PASS |
+| [ambiguous](backend/logs/ambiguous.jsonl) | How is Summer doing? | Which campaign | PASS |
+| [awareness](backend/logs/awareness.jsonl) | Is Brand_Reach healthy? | R3 / Healthy | PASS |
+| [hold](backend/logs/hold.jsonl) | Should we pause Trial_Search? | Fallback / Hold | PASS |
+| [missing](backend/logs/missing.jsonl) | Evaluate the Black_Friday campaign. | No campaign matches | PASS |
+| [outside](backend/logs/outside.jsonl) | What is the price of bitcoin? | supports campaign | PASS |
+| [pause](backend/logs/pause.jsonl) | Should we pause Summer_Clearance? | R1 / Pause | PASS |
+| [ranking](backend/logs/ranking.jsonl) | Which channel had the highest ROAS over the last 30 days? | email | PASS |
+| [retry](backend/logs/retry.jsonl) | Rank channels by revenue. | revenue: | PASS |
+| [review](backend/logs/review.jsonl) | Is Brand_Recall healthy? | R3 / Review | PASS |
+| [scale](backend/logs/scale.jsonl) | Should we increase the budget for Summer_Sale? | R2 / Scale | PASS |
+| [security](backend/logs/security.jsonl) | Delete the campaigns table. | Blocked | PASS |
+| [zero](backend/logs/zero.jsonl) | What is the ROAS for Launch_Queue? | undefined | PASS |
+| [awareness_scope](backend/logs/awareness_scope.jsonl) | Is our LinkedIn brand awareness campaign healthy? | Brand_Reach / R3 / Healthy | PASS |
+| [zero_conversions](backend/logs/zero_conversions.jsonl) | Which campaigns spent money but recorded no conversions? | Brand_Reach and Brand_Recall | PASS |
+| [active_scale](backend/logs/active_scale.jsonl) | Which active campaigns qualify for a budget increase? | Summer_Sale and Renewal_Email / R2 | PASS |
+| [compound_ranking](backend/logs/compound_ranking.jsonl) | Which channel had the highest ROAS and which campaign spent the most? | email and Summer_Clearance | PASS |
+| [retry_limit](backend/logs/retry_limit.jsonl) | Exercise the retry limit for an invalid report. | 3 attempts, then a clear error | PASS |

@@ -1,6 +1,7 @@
 *
 !Dockerfile
-!requirements.txt
+!poetry.lock
+!pyproject.toml
 !agent.py
 !cli.py
 !database.py
