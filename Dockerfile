@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --system --uid 10001 --user-group agent \
     && install -d -o agent -g agent /data /app/logs
 
-COPY agent.py cli.py database.py planner.py policy.py scenarios.py seed_db.py ./
+COPY api.py agent.py cli.py database.py planner.py policy.py scenarios.py seed_db.py ./
 USER agent
 ENTRYPOINT ["python", "cli.py"]
 CMD ["--help"]

@@ -2,6 +2,26 @@
 
 Ask a question in English or Persian about campaign performance or budget policy. The live planner translates the question into a structured report request. SQLite calculates the metrics and Python renders English results and recommendations.
 
+## HTTP API
+
+Start the gateway and two API replicas with `docker compose up -d --build`.
+The gateway listens on loopback port 8080. Set `API_PORT` to select another port.
+Swagger UI is available at `/docs` and database readiness at `/health`.
+
+~~~sh
+curl -fsS http://localhost:8080/questions -H 'Content-Type: application/json' \
+  -d '{"question":"Which channel had the highest ROAS over the last 30 days?","offline":true}'
+python3 load_test.py --requests 200 --clients 12
+docker compose up -d --scale api=4
+~~~
+
+Omit `offline` for live planning and configure the provider credentials below.
+Each replica accepts up to eight concurrent questions (configured with
+`API_CONCURRENCY`). Saturated replicas respond with HTTP 503 and a Retry-After
+header. The gateway tracks replica addresses through Docker DNS. All replicas
+read the same SQLite volume on one Docker host. Live throughput also depends
+on provider latency and quotas. The load test exercises the offline planner.
+
 ## Run with Docker Compose
 
 The build pulls its Python base image from the [ArvanCloud Docker mirror](https://www.arvancloud.ir/fa/dev/docker). With Docker Engine and Docker Compose running, execute these commands from this directory.
@@ -17,7 +37,7 @@ Compose seeds the named volume on the first query and mounts the database read-o
 Export your key in the shell for live queries. Compose also accepts a local `.env` file for the variables described under **Live model**.
 
 ~~~sh
-docker compose run --rm agent --trace "آیا کمپین آگاهی از برند ما در لینکدین عملکرد خوبی دارد؟"
+docker compose run --rm agent --trace "Is our LinkedIn brand awareness campaign healthy?"
 ~~~
 
 ## Run locally
@@ -97,7 +117,7 @@ Each log contains the exact question, mode, plan, executed SQL and bindings wher
 | [scale](logs/scale.jsonl) | Should we increase the budget for Summer_Sale? | R2 / Scale | PASS |
 | [security](logs/security.jsonl) | Delete the campaigns table. | Blocked | PASS |
 | [zero](logs/zero.jsonl) | What is the ROAS for Launch_Queue? | undefined | PASS |
-| [awareness_scope](logs/awareness_scope.jsonl) | آیا کمپین آگاهی از برند ما در لینکدین عملکرد خوبی دارد؟ | Brand_Reach / R3 / Healthy | PASS |
+| [awareness_scope](logs/awareness_scope.jsonl) | Is our LinkedIn brand awareness campaign healthy? | Brand_Reach / R3 / Healthy | PASS |
 | [zero_conversions](logs/zero_conversions.jsonl) | Which campaigns spent money but recorded no conversions? | Brand_Reach and Brand_Recall | PASS |
 | [active_scale](logs/active_scale.jsonl) | Which active campaigns qualify for a budget increase? | Summer_Sale and Renewal_Email / R2 | PASS |
 | [compound_ranking](logs/compound_ranking.jsonl) | Which channel had the highest ROAS and which campaign spent the most? | email and Summer_Clearance | PASS |

@@ -69,7 +69,7 @@ QUESTIONS = {
     "retry": "Rank channels by revenue.",
     "outside": "What is the price of bitcoin?",
     "missing": "Evaluate the Black_Friday campaign.",
-    "awareness_scope": "آیا کمپین آگاهی از برند ما در لینکدین عملکرد خوبی دارد؟",
+    "awareness_scope": "Is our LinkedIn brand awareness campaign healthy?",
     "zero_conversions": "Which campaigns spent money but recorded no conversions?",
     "active_scale": "Which active campaigns qualify for a budget increase?",
     "compound_ranking": "Which channel had the highest ROAS and which campaign spent the most?",
