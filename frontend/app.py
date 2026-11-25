@@ -76,7 +76,9 @@ if submitted:
                 with urlopen(request, timeout=155) as response:
                     st.session_state.result = json.load(response)
         except HTTPError as error:
-            if error.code == 503:
+            if error.code == 402:
+                st.error(label("Check your model provider's API balance.", "موجودی کیف پول API ارائه‌دهندهٔ مدل را بررسی کنید."))
+            elif error.code == 503:
                 st.warning(label("The API is busy. Try again in a moment.", "سرور مشغول است. کمی بعد دوباره تلاش کنید."))
             elif error.code == 502:
                 st.error(label("The planning service is unavailable. Check the API provider settings.", "سرویس مدل در دسترس نیست. تنظیمات ارائه‌دهنده را بررسی کنید."))
