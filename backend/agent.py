@@ -19,6 +19,14 @@ class State(TypedDict, total=False):
     attempt: int
     error: str
     answer: str
+    answer_fa: str
+
+
+FIELD_NAMES = {
+    "channel": "کانال", "name": "کمپین", "impressions": "نمایش", "clicks": "کلیک",
+    "spend": "هزینه", "conversions": "تبدیل‌ها", "revenue": "درآمد",
+    "roas": "بازده هزینهٔ تبلیغات", "ctr": "نرخ کلیک", "conversion_rate": "نرخ تبدیل",
+}
 
 
 def identifier(value):
@@ -61,13 +69,15 @@ def execute(s, runtime: Runtime[RequestContext]):
             raise ValueError("The planner must return a JSON object")
         intent = p["intent"]
         if intent == "write":
-            return dict(answer="Blocked. This agent has read-only database access.")
+            return dict(answer_fa="این درخواست مسدود شد. دسترسی به پایگاه داده فقط خواندنی است.", answer="Blocked. This agent has read-only database access.")
         if intent == "clarify":
             return dict(
+                answer_fa=p.get("question_fa") or "منظورتان کدام کمپین یا شاخص است؟",
                 answer=p.get("question", "Which campaign or metric do you mean?")
             )
         if intent == "outside":
             return dict(
+                answer_fa="می‌توانید دربارهٔ عملکرد کمپین‌ها یا بودجهٔ تبلیغات سؤال بپرسید.",
                 answer="This agent supports campaign performance and budget recommendations."
             )
         if intent not in ("policy", "analytics"):
@@ -86,9 +96,10 @@ def execute(s, runtime: Runtime[RequestContext]):
             exact = [r for r in matches if r["name"].casefold() == name.casefold()]
             matches = exact or matches
             if not matches:
-                return dict(answer=f'No campaign matches "{name}".')
+                return dict(answer_fa=f"کمپینی با نام «{name}» پیدا نشد.", answer=f'No campaign matches "{name}".')
             if len(matches) > 1:
                 return dict(
+                    answer_fa="منظورتان کدام کمپین است؟ " + "، ".join(r["name"] for r in matches),
                     answer="Which campaign do you mean? "
                     + ", ".join(r["name"] for r in matches)
                 )
@@ -107,6 +118,7 @@ def execute(s, runtime: Runtime[RequestContext]):
         cte = f"WITH totals AS ({BASE}), scoped AS (SELECT * FROM totals{where})"
         campaign = f"{cte} SELECT *,{RATIOS} FROM scoped"
         output = []
+        persian = []
         if intent == "policy":
             for row in read(campaign + " ORDER BY name", args):
                 decision = decide(row)
@@ -115,6 +127,7 @@ def execute(s, runtime: Runtime[RequestContext]):
                     2
                 ].strip().startswith(p["decision"]):
                     output.append(decision)
+                    persian.append(decide(row, "fa"))
         else:
             if not p.get("reports"):
                 raise ValueError("Supply at least one report")
@@ -156,23 +169,23 @@ def execute(s, runtime: Runtime[RequestContext]):
                 if not 1 <= limit <= 200:
                     raise ValueError("Limit must be 1 to 200")
                 for row in read(sql + " LIMIT ?", (*args, limit)):
-                    output.append(
-                        " | ".join(
-                            f"{k}: {format_value(v)}"
-                            + (
-                                "%"
-                                if v is not None and k in ("ctr", "conversion_rate")
-                                else ""
-                            )
-                            for k, v in row.items()
-                        )
-                    )
+                    english_fields, persian_fields = [], []
+                    for field, value in row.items():
+                        formatted = format_value(value)
+                        percent = value is not None and field in ("ctr", "conversion_rate")
+                        english_fields.append(f"{field}: {formatted}" + ("%" if percent else ""))
+                        localized = formatted if value is not None else "تعریف‌نشده (دادهٔ ناکافی)"
+                        persian_fields.append(f"{FIELD_NAMES.get(field, field)}: {localized}" + ("٪" if percent else ""))
+                    output.append(" | ".join(english_fields))
+                    persian.append(" | ".join(persian_fields))
         body = "\n".join(output) or "No matching results."
-        return dict(answer=f"{start} through {end}\n{body}")
+        body_fa = "\n".join(persian) or "نتیجه‌ای یافت نشد."
+        return dict(answer_fa=f"از {start} تا {end}\n{body_fa}", answer=f"{start} through {end}\n{body}")
     except (sqlite3.Error, ValueError, KeyError, TypeError, IndexError) as exc:
         trace(dict(error=str(exc)))
         return dict(
             error=str(exc),
+            answer_fa=f'پس از {s["attempt"]} تلاش، اجرای گزارش ناموفق بود.',
             answer=f'Unable to complete the query after {s["attempt"]} attempt(s): {exc}',
         )
 
@@ -193,10 +206,13 @@ def build_graph():
 GRAPH = build_graph()
 
 
-def run(question, path, offline=False, trace=lambda event: None):
+def run(question, path, offline=False, trace=lambda event: None, *, bilingual=False):
     trace(dict(mode="offline fixture" if offline else "live LLM", question=question))
-    answer = GRAPH.invoke(dict(question=question), context=RequestContext(path, offline, trace))["answer"]
+    result = GRAPH.invoke(dict(question=question), context=RequestContext(path, offline, trace))
+    answer = result["answer"]
     trace(dict(answer=answer))
+    if bilingual:
+        return {"answer": answer, "answer_fa": result["answer_fa"]}
     return answer
 
 

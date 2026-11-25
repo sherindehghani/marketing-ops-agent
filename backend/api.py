@@ -39,7 +39,7 @@ async def ask(request: Question):
         raise HTTPException(503, "All workers are busy", headers={"Retry-After": "1"})
     async with capacity:
         try:
-            answer = await asyncio.to_thread(run, request.question, database, request.offline)
+            result = await asyncio.to_thread(run, request.question, database, request.offline, bilingual=True)
         except (URLError, TimeoutError) as exc:
             raise HTTPException(502, "Planning service unavailable") from exc
-        return {"answer": answer}
+        return result
