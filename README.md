@@ -89,7 +89,7 @@ The seed command rebuilds marketing.db in the current directory. It generates da
 
 ## Live model
 
-The local integration was configured for `openai/gpt-5.4-mini` through Hooshi. Selecting report fields and filters requires a model that supports Chat Completions and JSON object output. This lets SQLite calculate the metrics and keeps policy decisions reproducible across providers. The live integration reached the provider, which returned HTTP 402 for insufficient API credit. The scenario evidence uses the offline planner.
+Provider access limited my model choices for this assignment. I configured `openai/gpt-5.4-mini` through Hooshi. With broader access, my first choice would have been `gpt-4o-mini`, and I would also have evaluated a GLM model on Persian campaign questions and its ability to return a valid report plan. Selecting report fields and filters requires a model that supports Chat Completions and JSON object output. This lets SQLite calculate the metrics and keeps policy decisions reproducible across providers. The live integration reached the provider, which returned HTTP 402 for insufficient API credit. The scenario evidence uses the offline planner.
 
 The default model identifier is `gpt-4o-mini`. Set `OPENAI_API_KEY` in your shell (or `LLM_API_KEY`), then run:
 
