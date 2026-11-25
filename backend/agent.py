@@ -32,7 +32,6 @@ FIELD_NAMES = {
 def identifier(value):
     if not isinstance(value, str) or not re.fullmatch("[a-z][a-z_]{0,39}", value):
         raise ValueError("Invalid column identifier")
-    # Qualify columns so unknown identifiers produce a real SQLite error.
     return "r." + value
 
 
