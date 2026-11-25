@@ -1,6 +1,24 @@
 # Marketing Ops Agent
 
-Ask an English question about campaign performance or budget policy. The live planner translates the question into a structured report request. SQLite calculates the metrics and Python renders the results and recommendations. A recommendation never changes a campaign.
+Ask a question in English or Persian about campaign performance or budget policy. The live planner translates the question into a structured report request. SQLite calculates the metrics and Python renders English results and recommendations.
+
+## Run with Docker Compose
+
+With Docker Engine and Docker Compose running, execute these commands from this directory.
+
+~~~sh
+docker compose build agent
+docker compose run --rm agent --offline "Which channel had the highest ROAS over the last 30 days?"
+docker compose run --rm --no-deps --entrypoint python agent scenarios.py
+~~~
+
+Compose seeds the named volume on the first query and mounts the database read-only in the agent container. Later runs reuse the same data, including its original dates. The scenario command uses a separate temporary database and prints assertion results. Use the local scenario command below to write JSONL evidence to the repository.
+
+Export your key in the shell for live queries. Compose also accepts a local `.env` file for the variables described under **Live model**.
+
+~~~sh
+docker compose run --rm agent --trace "آیا کمپین آگاهی از برند ما در لینکدین عملکرد خوبی دارد؟"
+~~~
 
 ## Run locally
 
@@ -27,7 +45,7 @@ python cli.py --trace "Which active campaigns qualify for a budget increase?"
 
 For another OpenAI-compatible service, set `LLM_BASE_URL` to its API root including the version path and `LLM_MODEL` to its model identifier. The service must support Chat Completions and JSON-object responses. The live planner receives the question, compact planning instructions and, during repair, the previous plan and error. Query results are rendered locally. Trace events go to stderr, answers to stdout.
 
-All submitted logs use the **offline fixture planner**. The fixture recognizes the exact English questions in the scenario table. It uses the same graph, SQLite database, calculations, policy and rendering as the live planner. No live provider response was verified for this submission.
+All submitted logs use the **offline fixture planner**. The fixture recognizes the exact questions in the scenario table. It uses the same graph, SQLite database, calculations, policy and rendering as the live planner. No live provider response was verified for this submission.
 
 ## Architecture decision
 
@@ -59,7 +77,7 @@ LangGraph represents planning, execution, and the transition on failure explicit
 
 ## Known limits
 
-The report vocabulary covers campaign and channel performance. The leads table satisfies the data contract but the planner does not expose lead-level analysis. A syntactically valid plan can misinterpret an English question. The CLI has no conversation history, and a user must repeat the relevant question when selecting a campaign. The result limit is 200. A provider outage or invalid JSON terminates the CLI request with an error. Further evaluation would compare plans against labeled paraphrases using the chosen live model.
+The report vocabulary covers campaign and channel performance. The leads table satisfies the data contract but the planner does not expose lead-level analysis. A syntactically valid plan can misinterpret a question. The CLI has no conversation history, and a user must repeat the relevant question when selecting a campaign. The result limit is 200. A provider outage terminates the CLI request with an error. Invalid plan JSON enters the same bounded correction loop as query errors.
 
 ## Scenario results
 
@@ -79,3 +97,8 @@ Each log contains the exact question, mode, plan, executed SQL and bindings wher
 | [scale](logs/scale.jsonl) | Should we increase the budget for Summer_Sale? | R2 / Scale | PASS |
 | [security](logs/security.jsonl) | Delete the campaigns table. | Blocked | PASS |
 | [zero](logs/zero.jsonl) | What is the ROAS for Launch_Queue? | undefined | PASS |
+| [awareness_scope](logs/awareness_scope.jsonl) | آیا کمپین آگاهی از برند ما در لینکدین عملکرد خوبی دارد؟ | Brand_Reach / R3 / Healthy | PASS |
+| [zero_conversions](logs/zero_conversions.jsonl) | Which campaigns spent money but recorded no conversions? | Brand_Reach and Brand_Recall | PASS |
+| [active_scale](logs/active_scale.jsonl) | Which active campaigns qualify for a budget increase? | Summer_Sale and Renewal_Email / R2 | PASS |
+| [compound_ranking](logs/compound_ranking.jsonl) | Which channel had the highest ROAS and which campaign spent the most? | email and Summer_Clearance | PASS |
+| [retry_limit](logs/retry_limit.jsonl) | Exercise the retry limit for an invalid report. | 3 attempts, then a clear error | PASS |

@@ -3,12 +3,13 @@ import os
 from datetime import date
 from urllib.request import Request, urlopen
 
-PROMPT = """You plan English marketing requests for a read-only SQLite agent.
+PROMPT = """You plan marketing requests in English or Persian for a read-only SQLite agent.
 Return one JSON object with intent (analytics, policy, clarify, outside, or write),
 name (campaign name/fragment exactly as mentioned, otherwise empty), and optional
 start and end inclusive ISO dates. Today is TODAY. Default is last 30 calendar days.
 Set active=true for active campaigns only. Set channel to google_ads, instagram,
-linkedin or email only if filtered. For vague criteria use clarify with a question.
+linkedin or email only if filtered. Set objective to conversion, brand_awareness
+or retargeting only if requested. For vague criteria use clarify with a question.
 For policy requests set decision to Scale, Pause, Hold, Healthy or Review ONLY if
 the user explicitly asks to filter by recommendation. For analytics return reports,
 one per requested comparison. Each report has group (campaign or channel), fields
@@ -48,7 +49,11 @@ def live(question, error=""):
         base + "/chat/completions", data=json.dumps(payload).encode(), headers=headers
     )
     with urlopen(req, timeout=45) as response:
-        return json.loads(json.load(response)["choices"][0]["message"]["content"])
+        content = json.load(response)["choices"][0]["message"]["content"]
+    try:
+        return json.loads(content)
+    except (TypeError, json.JSONDecodeError):
+        return content
 
 
 QUESTIONS = {
@@ -64,11 +69,44 @@ QUESTIONS = {
     "retry": "Rank channels by revenue.",
     "outside": "What is the price of bitcoin?",
     "missing": "Evaluate the Black_Friday campaign.",
+    "awareness_scope": "آیا کمپین آگاهی از برند ما در لینکدین عملکرد خوبی دارد؟",
+    "zero_conversions": "Which campaigns spent money but recorded no conversions?",
+    "active_scale": "Which active campaigns qualify for a budget increase?",
+    "compound_ranking": "Which channel had the highest ROAS and which campaign spent the most?",
+    "retry_limit": "Exercise the retry limit for an invalid report.",
 }
 
 
 def fixture(question, error=""):
     key = next((k for k, v in QUESTIONS.items() if v == question), None)
+    if key == "retry_limit":
+        return dict(
+            intent="analytics",
+            reports=[dict(group="channel", fields=["revenues"])],
+        )
+    if key == "compound_ranking":
+        return dict(
+            intent="analytics",
+            reports=[
+                dict(group="channel", fields=["roas"], order=[["roas", "desc"]], limit=1),
+                dict(group="campaign", fields=["spend"], order=[["spend", "desc"]], limit=1),
+            ],
+        )
+    if key == "awareness_scope":
+        return dict(intent="policy", channel="linkedin", objective="brand_awareness")
+    if key == "active_scale":
+        return dict(intent="policy", active=True, decision="Scale")
+    if key == "zero_conversions":
+        return dict(
+            intent="analytics",
+            reports=[
+                dict(
+                    group="campaign",
+                    fields=["spend", "conversions"],
+                    zero_conversions_with_spend=True,
+                )
+            ],
+        )
     if key in ("ranking", "retry", "zero"):
         metric = "revenue" if key == "retry" else "roas"
         field = "revenues" if key == "retry" and not error else metric

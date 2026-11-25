@@ -48,7 +48,9 @@ PROFILES = [
 ]
 
 
-def seed(path, today=None):
+def seed(path, today=None, *, if_missing=False):
+    if if_missing and path.exists():
+        return False
     today = today or date.today()
     rng = random.Random(42)
     fd, temp = tempfile.mkstemp(dir=path.parent)
@@ -89,7 +91,14 @@ def seed(path, today=None):
             conn.commit()
         finally:
             conn.close()
-        os.replace(temp, path)
+        if if_missing:
+            try:
+                os.link(temp, path)
+            except FileExistsError:
+                return False
+        else:
+            os.replace(temp, path)
+        return True
     finally:
         Path(temp).unlink(missing_ok=True)
 
@@ -97,6 +106,7 @@ def seed(path, today=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", type=Path, default=Path("marketing.db"))
+    parser.add_argument("--if-missing", action="store_true")
     args = parser.parse_args()
-    seed(args.db)
-    print(f"Created {args.db}")
+    if seed(args.db, if_missing=args.if_missing):
+        print(f"Created {args.db}")

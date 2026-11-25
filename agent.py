@@ -43,6 +43,8 @@ def run(question, path, offline=False, trace=lambda event: None):
     def execute(s):
         p = s["plan"]
         try:
+            if not isinstance(p, dict):
+                raise ValueError("The planner must return a JSON object")
             intent = p["intent"]
             if intent == "write":
                 return dict(answer="Blocked. This agent has read-only database access.")
@@ -50,10 +52,12 @@ def run(question, path, offline=False, trace=lambda event: None):
                 return dict(
                     answer=p.get("question", "Which campaign or metric do you mean?")
                 )
-            if intent not in ("policy", "analytics"):
+            if intent == "outside":
                 return dict(
                     answer="This agent supports campaign performance and budget recommendations."
                 )
+            if intent not in ("policy", "analytics"):
+                raise ValueError("Unknown plan intent")
             start, end = window(30)
             start, end = p.get("start") or start, p.get("end") or end
             if date.fromisoformat(start) > date.fromisoformat(end):
@@ -82,12 +86,15 @@ def run(question, path, offline=False, trace=lambda event: None):
             if p.get("channel"):
                 filters.append("channel=?")
                 args.append(p["channel"])
+            if p.get("objective"):
+                filters.append("objective=?")
+                args.append(p["objective"])
             where = " WHERE " + " AND ".join(filters) if filters else ""
             cte = f"WITH totals AS ({BASE}), scoped AS (SELECT * FROM totals{where})"
             campaign = f"{cte} SELECT *,{RATIOS} FROM scoped"
             output = []
             if intent == "policy":
-                for row in read(campaign, args):
+                for row in read(campaign + " ORDER BY name", args):
                     decision = decide(row)
                     trace(dict(decision=decision))
                     if not p.get("decision") or decision.split("|")[
@@ -116,6 +123,8 @@ def run(question, path, offline=False, trace=lambda event: None):
                     elif report["group"] != "campaign":
                         raise ValueError("Group by channel or campaign")
                     columns = [identifier(v) for v in report["fields"]]
+                    if not columns:
+                        raise ValueError("Supply at least one report field")
                     sql = (
                         f"SELECT r.{label}, "
                         + ", ".join(columns)

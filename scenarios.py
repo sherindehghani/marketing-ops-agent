@@ -20,6 +20,11 @@ EXPECTED = dict(
     retry="revenue:",
     outside="supports campaign",
     missing="No campaign matches",
+    awareness_scope="Brand_Reach | R3 | Healthy",
+    zero_conversions="Brand_Recall",
+    active_scale="Summer_Sale | R2 | Scale",
+    compound_ranking="name: Summer_Clearance | spend:",
+    retry_limit="Unable to complete the query after 3 attempt(s)",
 )
 
 
@@ -43,6 +48,17 @@ def main():
             else:
                 expected = EXPECTED[key]
             assert expected in answer, (key, answer, expected)
+            if key == "awareness_scope":
+                assert "Winter_Archive" not in answer and "Brand_Recall" not in answer
+            if key == "zero_conversions":
+                assert "Brand_Reach" in answer and "Launch_Queue" not in answer
+            if key == "active_scale":
+                assert "Renewal_Email | R2 | Scale" in answer
+                assert answer.count("\n") == 2
+            if key == "compound_ranking":
+                assert "channel: email | roas:" in answer
+            if key == "retry_limit":
+                assert [e["attempt"] for e in events if "attempt" in e] == [1, 2, 3]
             if key == "retry":
                 assert [e["attempt"] for e in events if "attempt" in e] == [1, 2]
                 assert any("no such column" in e.get("error", "") for e in events)

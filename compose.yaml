@@ -1,0 +1,27 @@
+x-agent-image: &agent-image
+  image: marketing-ops-agent:local
+  build: .
+
+services:
+  seed:
+    <<: *agent-image
+    entrypoint: ["python", "seed_db.py"]
+    command: ["--db", "/data/marketing.db", "--if-missing"]
+    volumes:
+      - marketing-data:/data
+
+  agent:
+    <<: *agent-image
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+    volumes:
+      - marketing-data:/data:ro
+
+volumes:
+  marketing-data:
