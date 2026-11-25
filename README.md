@@ -22,6 +22,17 @@ header. The gateway tracks replica addresses through Docker DNS. All replicas
 read the same SQLite volume on one Docker host. Live throughput also depends
 on provider latency and quotas. The load test exercises the offline planner.
 
+### Local benchmark
+
+Two replicas handled 1,000 offline ranking requests through the gateway in each run.
+Latency and throughput below count successful responses. Busy responses returned
+HTTP 503 with a Retry-After header.
+
+| Concurrent clients | Successful | Busy | Successful requests/s | p95 latency |
+|---:|---:|---:|---:|---:|
+| 12 | 1,000 | 0 | 908.9 | 18 ms |
+| 64 | 362 | 638 | 551.7 | 81 ms |
+
 ## Run with Docker Compose
 
 The build pulls its Python base image from the [ArvanCloud Docker mirror](https://www.arvancloud.ir/fa/dev/docker). With Docker Engine and Docker Compose running, execute these commands from this directory.
