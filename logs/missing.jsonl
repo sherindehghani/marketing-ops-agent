@@ -1,0 +1,7 @@
+{"mode": "offline fixture", "question": "Evaluate the Black_Friday campaign."}
+{"attempt": 1}
+{"plan": {"intent": "policy", "name": "Black_Friday"}}
+{"sql": "SELECT id,name FROM campaigns WHERE instr(lower(name),lower(?))>0 ORDER BY name", "parameters": ["Black_Friday"]}
+{"row_count": 0, "sample": []}
+{"answer": "No campaign matches \"Black_Friday\"."}
+{"expected": "No campaign matches", "result": "PASS"}

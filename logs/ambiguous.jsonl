@@ -1,0 +1,7 @@
+{"mode": "offline fixture", "question": "How is Summer doing?"}
+{"attempt": 1}
+{"plan": {"intent": "policy", "name": "Summer"}}
+{"sql": "SELECT id,name FROM campaigns WHERE instr(lower(name),lower(?))>0 ORDER BY name", "parameters": ["Summer"]}
+{"row_count": 2, "sample": [{"id": 2, "name": "Summer_Clearance"}, {"id": 1, "name": "Summer_Sale"}]}
+{"answer": "Which campaign do you mean? Summer_Clearance, Summer_Sale"}
+{"expected": "Which campaign", "result": "PASS"}

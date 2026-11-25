@@ -1,0 +1,5 @@
+{"mode": "offline fixture", "question": "What is the price of bitcoin?"}
+{"attempt": 1}
+{"plan": {"intent": "outside"}}
+{"answer": "This agent supports campaign performance and budget recommendations."}
+{"expected": "supports campaign", "result": "PASS"}
