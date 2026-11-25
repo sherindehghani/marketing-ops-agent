@@ -89,6 +89,8 @@ The seed command rebuilds marketing.db in the current directory. It generates da
 
 ## Live model
 
+The local integration was configured for `openai/gpt-5.4-mini` through Hooshi. Selecting report fields and filters requires a model that supports Chat Completions and JSON object output. This lets SQLite calculate the metrics and keeps policy decisions reproducible across providers. The live integration reached the provider, which returned HTTP 402 for insufficient API credit. The scenario evidence uses the offline planner.
+
 The default model identifier is `gpt-4o-mini`. Set `OPENAI_API_KEY` in your shell (or `LLM_API_KEY`), then run:
 
 ~~~sh
@@ -100,6 +102,8 @@ For another OpenAI-compatible service, set `LLM_BASE_URL` to its API root includ
 All submitted logs use the **offline fixture planner**. The fixture recognizes the exact questions in the scenario table. It uses the same graph, SQLite database, calculations, policy and rendering as the live planner. No live provider response was verified for this submission.
 
 ## Architecture decision
+
+See the [edited English record of coding-agent prompts and outcomes](submission/agent_conversation.md).
 
 LangGraph represents planning, execution, and the transition on failure explicitly. State contains the plan, attempt count, last error, and answer. The first plan counts as attempt one. SQLite and plan-validation errors return to the planner with the rejected plan and error text. Execution ends on success or after attempt three. An ambiguous name returns the matching names immediately. The CLI accepts the clarified request as a new invocation.
 
