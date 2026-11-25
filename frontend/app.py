@@ -1,5 +1,6 @@
 import json
 import os
+from html import escape
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -18,11 +19,13 @@ EXAMPLES = {
 
 
 def label(english, persian):
-    # Isolate the Persian run so punctuation stays with its own language.
-    return f"{english}  ·  \u2067{persian}\u2069"
+    if language == "فارسی":
+        return f"\u2067{persian}\u2069"
+    return english
 
 
 st.set_page_config(page_title="Campaign analysis | تحلیل کمپین", page_icon="📊")
+language = st.selectbox("زبان / Language", ["فارسی", "English"])
 st.html("""
 <style>
 .stMainBlockContainer { max-width: 59rem; }
@@ -39,9 +42,10 @@ st.html("""
 [data-testid="stForm"] { background: white; border-color: #ded2e9; border-radius: 1rem; }
 textarea { unicode-bidi: plaintext; }
 </style>
-<header class="campaign-header"><h1>Campaign analysis</h1>
-<span lang="fa" dir="rtl">تحلیل کمپین‌ها</span></header>
 """)
+english_title = "<h1>Campaign analysis</h1>" if language != "فارسی" else ""
+persian_title = '<span lang="fa" dir="rtl">تحلیل کمپین‌ها</span>' if language != "English" else ""
+st.html(f'<header class="campaign-header">{english_title}{persian_title}</header>')
 mode = st.radio(label("Analysis mode", "روش تحلیل"), ["sample", "live"],
                 format_func=lambda value: label("Sample questions", "سؤال‌های نمونه")
                 if value == "sample" else label("Live analysis", "تحلیل زنده"),
@@ -58,6 +62,7 @@ with st.form("campaign_question"):
     submitted = st.form_submit_button(label("Run analysis", "اجرای تحلیل"), type="primary")
 
 if submitted:
+    st.session_state.pop("result", None)
     if not question.strip():
         st.warning(label("Enter a question to analyze.", "برای تحلیل، یک سؤال وارد کنید."))
     else:
@@ -69,12 +74,11 @@ if submitted:
         try:
             with st.spinner(label("Analyzing campaign data...", "در حال تحلیل داده‌های کمپین…")):
                 with urlopen(request, timeout=155) as response:
-                    answer = json.load(response)["answer"]
-            st.subheader(label("Analysis result", "نتیجهٔ تحلیل"))
-            with st.container(border=True):
-                st.text(answer)
+                    st.session_state.result = json.load(response)
         except HTTPError as error:
-            if error.code == 503:
+            if error.code == 402:
+                st.error(label("Check your model provider's API balance.", "موجودی کیف پول API ارائه‌دهندهٔ مدل را بررسی کنید."))
+            elif error.code == 503:
                 st.warning(label("The API is busy. Try again in a moment.", "سرور مشغول است. کمی بعد دوباره تلاش کنید."))
             elif error.code == 502:
                 st.error(label("The planning service is unavailable. Check the API provider settings.", "سرویس مدل در دسترس نیست. تنظیمات ارائه‌دهنده را بررسی کنید."))
@@ -82,3 +86,15 @@ if submitted:
                 st.error(label(f"API error {error.code}", f"خطای سرور {error.code}"))
         except (URLError, TimeoutError):
             st.error(label("Could not reach the marketing API. Check the connection and try again.", "ارتباط با سرور برقرار نشد. اتصال را بررسی و دوباره تلاش کنید."))
+
+
+if "result" in st.session_state:
+    st.subheader(label("Analysis result", "نتیجهٔ تحلیل"))
+    result = st.session_state.result
+    if language == "فارسی":
+        with st.container(border=True):
+            st.html('<div dir="rtl" lang="fa" style="white-space:pre-wrap">' +
+                    escape(result["answer_fa"]) + '</div>')
+    else:
+        with st.container(border=True):
+            st.text(result["answer"])

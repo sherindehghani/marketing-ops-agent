@@ -51,7 +51,6 @@ def query(path, sql, bindings=()):
             return sqlite3.SQLITE_DENY
 
         conn.set_authorizer(authorize)
-        # Limit work even if a generated read query is expensive.
         budget = iter(range(2000))
         conn.set_progress_handler(lambda: next(budget, None) is None, 1000)
         rows = conn.execute(sql, bindings).fetchmany(201)

@@ -1,7 +1,7 @@
 import asyncio
 import os
 from pathlib import Path
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -39,7 +39,11 @@ async def ask(request: Question):
         raise HTTPException(503, "All workers are busy", headers={"Retry-After": "1"})
     async with capacity:
         try:
-            answer = await asyncio.to_thread(run, request.question, database, request.offline)
+            result = await asyncio.to_thread(run, request.question, database, request.offline, bilingual=True)
+        except HTTPError as exc:
+            if exc.code == 402:
+                raise HTTPException(402, "Planning provider requires payment") from exc
+            raise HTTPException(502, "Planning service unavailable") from exc
         except (URLError, TimeoutError) as exc:
             raise HTTPException(502, "Planning service unavailable") from exc
-        return {"answer": answer}
+        return result

@@ -28,7 +28,6 @@ CREATE TABLE leads (
  deal_value REAL NOT NULL CHECK(deal_value>=0), created_at TEXT NOT NULL
 );
 """
-# Daily profile: impressions, clicks, spend, conversions, revenue.
 PROFILES = [
     ("Summer_Sale", "google_ads", "conversion", 100, "active", (1000, 80, 30, 8, 144)),
     (

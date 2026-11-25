@@ -1,13 +1,13 @@
 # Marketing Ops Agent
 
-Ask a question in English or Persian about campaign performance or budget policy. The live planner translates the question into a structured report request. SQLite calculates the metrics and Python renders English results and recommendations.
+Ask a question in English or Persian about campaign performance or budget policy. The live planner translates the question into a structured report request. SQLite calculates the metrics and Python renders English and Persian results and recommendations.
 
 ## Streamlit dashboard
 
 Run `docker compose up -d --build` from the repository root and open
 [Campaign analysis](http://localhost:8501). Choose a sample question for an offline
 analysis, or switch to **Live analysis** to use the configured model.
-The dashboard displays English and Persian together. For live analysis, copy
+The language selector switches controls and results between Persian and English. The API returns both `answer` (English) and `answer_fa` (Persian) from the same query. The CLI accepts `--language en|fa|both`. For live analysis, copy
 `sample.env` to `.env` and fill in the provider credentials.
 Set `FRONTEND_PORT` to change the published dashboard port.
 

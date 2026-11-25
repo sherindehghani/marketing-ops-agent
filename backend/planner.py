@@ -19,7 +19,7 @@ spend, conversions, revenue, roas, ctr, conversion_rate. Handle campaign/channel
 metrics only. Compound rankings: give separate rankings or clarify an ambiguous
 tradeoff. Use policy intent for budget decisions and awareness health. Never supply
 numbers for the answer. Write requests use intent write. Unsupported analytics
-use outside. Answer all clarification text in English."""
+use outside. For clarify, return the same clarification in English (question) and Persian (question_fa)."""
 
 
 def live(question, error=""):

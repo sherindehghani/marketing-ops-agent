@@ -19,6 +19,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--trace", action="store_true", help="Write JSON events to stderr"
     )
+    parser.add_argument("--language", choices=["en", "fa", "both"], default="en")
     args = parser.parse_args()
 
     def trace(event):
@@ -28,6 +29,10 @@ if __name__ == "__main__":
     try:
         if not args.db.is_file():
             parser.exit(1, f"Database not found at {args.db}. Run seed_db.py first.\n")
-        print(run(args.question, args.db, args.offline, trace))
+        result = run(args.question, args.db, args.offline, trace, bilingual=True)
+        if args.language in ("en", "both"):
+            print(result["answer"])
+        if args.language in ("fa", "both"):
+            print(result["answer_fa"])
     except Exception as exc:
         parser.exit(1, f"Agent failed: {exc}\n")
